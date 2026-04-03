@@ -1,0 +1,51 @@
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.env
+*.egg-info/
+dist/
+build/
+
+# ─── Jupyter Notebooks ───────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ─── Data (large files — use data/raw/.gitkeep placeholder) ──────────────────
+data/raw/*.csv
+data/raw/*.parquet
+data/raw/*.json
+data/raw/*.gz
+# Exception: keep the data README and gitkeep
+!data/raw/.gitkeep
+!data/README.md
+
+# ─── Outputs ─────────────────────────────────────────────────────────────────
+outputs/figures/*.png
+outputs/figures/*.jpg
+outputs/figures/*.pdf
+outputs/tables/*.csv
+outputs/tables/*.xlsx
+outputs/intermediate/*.pkl
+outputs/intermediate/*.parquet
+outputs/intermediate/*.csv
+# Keep placeholders
+!outputs/figures/.gitkeep
+!outputs/tables/.gitkeep
+!outputs/intermediate/.gitkeep
+
+# ─── OS / Editor ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── Claude Code ─────────────────────────────────────────────────────────────
+.claude/
