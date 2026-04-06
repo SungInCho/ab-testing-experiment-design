@@ -4,75 +4,32 @@ A rigorous, pre-registered A/B test experiment design for a household-level coup
 
 ---
 
-## Table of Contents
+## Business Question
 
-1. [Project Overview](#project-overview)
-2. [Dataset](#dataset)
-3. [Repository Structure](#repository-structure)
-4. [Experiment Design Summary](#experiment-design-summary)
-5. [Key Results](#key-results)
-6. [Methodology](#methodology)
-7. [How to Run](#how-to-run)
-8. [Requirements](#requirements)
-
----
-
-## Project Overview
-
-**Business Question:** Will sending household-level promotional coupons to eligible frequent shoppers increase their 4-week total spend by at least $14 — enough to justify the campaign rollout cost?
-
-**Approach:**
-- Designed a complete pre-registered A/B test using historical grocery transaction data as a proxy for a future experiment
-- Applied the **Intent-to-Treat (ITT)** framework — all eligible households, including zero-spenders, are included in the primary analysis
-- Used **4-week total spend** as the primary outcome metric, matching the planned coupon validity window
-- Applied **CUPED** (Controlled-experiment Using Pre-Experiment Data) for variance reduction
-- Validated the design with SRM checks, baseline balance tests, and A/A simulations
-
----
-
-## Dataset
-
-**Source:** dunnhumby — The Complete Journey
-**Scale:** ~2,500 households × 2 years (~102 weeks) of grocery transactions, ~2.6M line-item records
-
-| File | Description |
-|---|---|
-| `transaction_data.csv` | Line-item purchases (receipt level) |
-| `hh_demographic.csv` | Demographics for a subset of households |
-| `campaign_table.csv` | Household campaign participation history |
-| `campaign_desc.csv` | Campaign type descriptions |
-| `coupon.csv` | Coupon-to-product mapping |
-| `coupon_redempt.csv` | Coupon redemption events |
-| `product.csv` | Product master with department/brand |
-| `causal_data.csv` | Display and mailer flags by product/week |
-| `hh_features.csv` | Engineered household-level feature table (pre + post) |
-
-> **Note:** Raw data files are not tracked in Git due to file size. Place them in `data/raw/` before running notebooks.
+> *"Will sending household-level promotional coupons to eligible frequent shoppers increase their 4-week total spend by at least $14 — enough to justify full-scale campaign rollout?"*
 
 ---
 
 ## Repository Structure
 
 ```
-ab-testing-experiment-design-complete-journey/
+ab-testing-experiment-design/
 │
-├── README.md                        # This file
-├── requirements.txt                 # Python dependencies
+├── README.md
+├── requirements.txt
 ├── .gitignore
 │
 ├── data/
-│   ├── README.md                    # Data dictionary & field descriptions
+│   ├── README.md                    # Data dictionary and field descriptions
 │   └── raw/                         # Raw CSV files (not tracked in Git)
-│       └── .gitkeep
 │
-├── docs/                            # Written documentation for each stage
-│   ├── 01_data_preparation.md
-│   ├── 02_exploratory_data_analysis.md
-│   ├── 03_ab_test_experiment_design.md
-│   ├── 04_appendix.md
-│   ├── final_summary.md             # Complete design summary (all 14 steps)
-│   ├── Data Description.pdf         # Original dataset documentation
-│   └── Experiment Design Plan.pdf   # Original design plan
+├── docs/                            # Written documentation
+│   ├── 01_data_preparation.md       # Data loading, joining, and feature engineering
+│   ├── 02_exploratory_data_analysis.md  # EDA findings and distribution analysis
+│   ├── 03_ab_test_experiment_design.md  # Full 14-step experiment design
+│   ├── 04_appendix.md               # Supporting analyses (power tables, subgroups, binary outcomes)
+│   ├── final_summary.md             # End-to-end project summary with key results
+│   └── Data Description.pdf         # Original dataset documentation
 │
 ├── notebooks/                       # Jupyter notebooks (main deliverables)
 │   ├── 01_data_preparation_and_eda.ipynb
@@ -80,190 +37,165 @@ ab-testing-experiment-design-complete-journey/
 │   └── 03_appendix.ipynb
 │
 ├── src/                             # Reusable Python modules
-│   ├── __init__.py
-│   ├── preprocessing.py             # Data loading & joining
+│   ├── preprocessing.py             # Data loading and joining
 │   ├── eligibility.py               # Eligibility filter logic
 │   ├── metrics.py                   # Outcome metric construction
-│   ├── variance.py                  # Variance estimation & winsorization
+│   ├── variance.py                  # Variance estimation and winsorization
 │   ├── aa_simulation.py             # A/A simulation framework
-│   ├── power.py                     # Sample size & power calculations
+│   ├── power.py                     # Sample size and power calculations
 │   ├── cuped.py                     # CUPED variance reduction
 │   └── randomization.py             # Stratified randomization
 │
-├── outputs/
-│   ├── figures/                     # Saved plots
-│   ├── tables/                      # Saved summary tables
-│   └── intermediate/                # Cached intermediate datasets
-│
-└── presentations/
-    └── experiment_design_summary.md # Presentation-ready summary
+└── outputs/
+    ├── figures/                     # Saved plots
+    ├── tables/                      # Saved summary tables
+    └── intermediate/                # Cached intermediate datasets
 ```
 
 ---
 
-## Experiment Design Summary
+## Dataset
+
+**Source:** dunnhumby — The Complete Journey
+**Scale:** ~2,500 households × 102 weeks (~2 years) of grocery transactions, ~2.6M line-item records
+
+| File | Description |
+|---|---|
+| `transaction_data.csv` | Line-item receipts (household × basket × product) |
+| `hh_demographic.csv` | Demographics for a subset of households |
+| `campaign_table.csv` | Household campaign participation history |
+| `campaign_desc.csv` | Campaign type and week range metadata |
+| `coupon.csv` | Coupon-to-product mappings |
+| `coupon_redempt.csv` | Coupon redemption events |
+| `product.csv` | Product master with department and brand |
+| `causal_data.csv` | Weekly display and mailer flags by product/store |
+| `hh_features.csv` | Engineered household-level feature table (output of Notebook 1) |
+
+> Raw data files are not tracked in Git. Place them in `data/raw/` before running notebooks.
+
+---
+
+## Notebooks
+
+| Notebook | Description |
+|---|---|
+| `01_data_preparation_and_eda.ipynb` | Load and join 8 raw tables; engineer household-level features; EDA of spend, frequency, recency, and promotion behavior |
+| `02_experiment_design.ipynb` | Full 14-step experiment design: eligibility, baselines, variance estimation, power analysis, randomization, pre-launch checks, pre-registered analysis plan |
+| `03_appendix.ipynb` | Stratum-level baseline summary, sample size sensitivity table, pre-registration template, subgroup preview, binary outcome power analysis |
+
+---
+
+## 14-Step Design Summary
 
 | Step | Decision |
 |---|---|
-| **1. Business Decision** | Will a coupon increase incremental spend enough to justify rollout? |
-| **2. Eligible Population** | Active HHs with ≥2 trips, recency ≤90 days, ≥1 prior campaign contact |
-| **3. Treatment / Control** | Category-specific coupon (direct mail) vs. business-as-usual; 4-week window |
-| **4. Metrics** | **Primary:** 4-week total spend. **Secondary:** conversion rate, basket size, trips |
-| **5a. Pre-Period Baselines** | Spend, frequency, promo responsiveness computed per household |
-| **5b. Variance Validation** | 4-week rolling window σ; pre vs. post distribution confirmed stable |
-| **5c. MDE Realism** | A/A simulation noise floor < MDE → experiment is feasible |
-| **6. MDE** | **$14 per 4 weeks** ($3.50/week) — cost-justified break-even threshold |
-| **7. Alpha / Power** | α = 0.05, Power = 0.80, two-sided Welch's t-test |
-| **8. Sample Size** | Computed per arm using 4-week ITT σ; reduced ~35–45% via CUPED |
-| **9. Allocation** | 50 / 50 treatment-control split |
-| **10. Randomization** | Stratified by spend tier (4 levels) × recency band (4 levels), seed = 42 |
-| **11. Duration** | 4 weeks, fixed horizon, no early stopping |
-| **12. Quality Checks** | SRM, baseline balance (Welch's t, χ²), A/A simulation, duplicate check |
-| **13. Analysis Plan** | Welch's t-test (primary), CUPED, ITT framework; Bonferroni for secondary |
-| **14. Decision Rule** | Launch if p < 0.05 AND effect ≥ $14/4wk AND guardrails pass |
+| 1. Business decision | Coupon campaign ROI test — requires ≥$14 incremental spend per HH per 4 weeks |
+| 2. Eligible population | ≥2 pre-period trips, recency ≤90 days, ≥1 campaign contact → **1,288 households** |
+| 3. Treatment / Control | Category coupons (direct mail) vs. business-as-usual; 4-week window |
+| 4. Metrics | **Primary:** 4-week total spend (ITT). **Secondary:** conversion, basket size, trips |
+| 5a. Baselines | Right-skewed spend, low coupon usage; spend tier and recency band validated as stratifiers |
+| 5b. Variance | σ_raw=$188.81, σ_win=$183.18, σ_CUPED=$138.01; ρ=0.682 pre-post correlation |
+| 5c. MDE realism | A/A noise floor ~$6–8 < $14 MDE → metric is sufficiently sensitive |
+| 6. MDE | **$14.00 per 4 weeks** ($3.50/week) — cost-justified break-even threshold |
+| 7. Alpha / Power | α = 0.05, Power = 0.80, two-sided Welch's t-test |
+| 8. Sample size | MDE=$14 requires ~3,052 households with CUPED (1,288 available); min feasible MDE ≈ $24 |
+| 9. Allocation | 50% Treatment / 50% Control (644 per arm) |
+| 10. Randomization | Stratified: spend tier (4) × recency band (4) = 16 cells; seed = 42 |
+| 11. Duration | 4 weeks fixed horizon; no early stopping |
+| 12. Quality checks | SRM ✓, covariate balance ✓, A/A FPR≈5% ✓, no duplicates ✓ |
+| 13. Analysis plan | Welch's t-test (primary), CUPED adjustment, ITT, Bonferroni for secondary |
+| 14. Decision rule | Launch: p < 0.05 AND effect ≥ $14 AND guardrails pass |
 
 ---
 
 ## Key Results
 
 ### Eligible Population
-- **2,498 total households** in the dataset
-- **Eligibility criteria applied:** ≥2 pre-period trips, recency ≤90 days, ≥1 campaign contact
-- Eligible pool serves as the ITT analysis population (zero-spenders included as Y = 0)
 
-### Pre-Period Baseline (Eligible Households)
-| Metric | Value |
-|---|---|
-| Median avg weekly spend | ~$17–20 |
-| Spend distribution | Right-skewed (skewness ≈ 1.4), heavy-tailed |
-| Zero-spend rate in 4-week windows | ~8% |
-| Pre-to-post spend correlation | r ≈ 0.81 (supports CUPED) |
+- **Total households:** 2,498
+- **Eligible (ITT population):** 1,288 (3 eligibility criteria applied)
+- **Treatment / Control:** 644 / 644 (stratified 50/50 split)
 
-### Power Analysis (4-Week Total Spend)
-| Scenario | σ (4-wk) | MDE | n per arm | Feasible? |
-|---|---|---|---|---|
-| Raw | Full ITT σ | $14 | Computed | Check curves |
-| Winsorized (1–99%) | Reduced σ | $14 | Reduced | More feasible |
-| CUPED-adjusted | σ × √(1−ρ²) | $14 | ~35–45% lower | Most feasible |
+### Variance and CUPED
 
-### CUPED Variance Reduction
-- Pre-to-post correlation: **ρ ≈ 0.81**
-- Variance reduction: **~35% (1 − ρ²)**
-- CUPED aligns granularity: Y = 4-week total spend, X = avg weekly spend × 4
+| Scenario | σ (4-week) | Notes |
+|---|---|---|
+| Raw ITT | $188.81 | Full distribution, zeros included |
+| Winsorized (1–99%) | $183.18 | Outliers clipped |
+| CUPED-adjusted | $138.01 | ρ = 0.682; 53.5% variance reduction |
 
-### Quality Checks (Simulated)
+### Power Analysis (MDE = $14, Power = 80%)
+
+| Variance Scenario | n per arm | n total | Feasible? |
+|---|---|---|---|
+| Raw | ~2,856 | ~5,712 | No |
+| Winsorized | ~2,684 | ~5,368 | No |
+| CUPED | ~1,526 | ~3,052 | **No** |
+
+**Minimum feasible MDE at 80% power (CUPED):** ~$24 per 4-week window (n_total ≈ 1,040)
+
+### Pre-Launch Quality Checks
+
 | Check | Result |
 |---|---|
-| SRM test | p > 0.01 — ratio consistent with 50/50 |
-| Baseline balance (Welch's t) | No significant covariate imbalance |
-| A/A simulation FPR | ≈ 5% (correct type I error rate) |
-| Duplicate households | None detected |
-
-### Decision Rule
-The campaign is recommended for **LAUNCH** if and only if:
-1. Primary metric p-value < 0.05 (two-sided)
-2. Point estimate ≥ $14/4wk AND lower 95% CI > $0
-3. Guardrails pass: discount cost ≤ $3/HH, non-target spend decline < 5%
-
----
-
-## Methodology
-
-### 14-Step Experiment Design Framework
-
-**Step 1 — Business Decision**
-Define the economic question and the decision that depends on the experiment outcome. The coupon campaign must generate at least $14 incremental spend per household per 4-week window to break even.
-
-**Step 2 — Eligibility Definition**
-Filter households to those that are contactable and engaged: ≥2 pre-period trips, recency ≤90 days from end of pre-period, ≥1 historical campaign contact.
-
-**Step 3 — Treatment & Control**
-Treatment: category-specific coupons sent by direct mail. Control: business-as-usual (no mailing). Experiment window: 4 weeks.
-
-**Step 4 — Metrics**
-- **Primary:** 4-week total household spend (continuous, Welch's t-test)
-- **Secondary:** conversion rate (binary), basket size ($/trip), total trips
-
-**Steps 5a–5c — Baseline, Variance, Feasibility**
-- 5a: Pre-period behavioral summary by spend tier and recency band
-- 5b: 4-week rolling window variance estimation; confirmed σ stability and pre–post consistency
-- 5c: Metric feasibility check (sparsity, skewness, Q-Q) + A/A simulation MDE realism
-
-**Step 6 — MDE**
-MDE = $14 / 4-week window (cost-based: 5 coupons × $1 × 20% redemption + $0.50 mailing = $1.50 break-even, moderate scenario = $14).
-
-**Step 7 — Alpha & Power**
-α = 0.05, Power = 0.80, two-sided (detect both positive and negative effects).
-
-**Step 8 — Sample Size**
-Using `n = 2σ²(z_{α/2} + z_β)² / δ²` with ITT σ from 4-week rolling windows. Power curves shown for raw σ, winsorized σ, and CUPED-adjusted σ.
-
-**Step 9 — Allocation**
-50/50 split — maximizes power for given total N at low treatment cost.
-
-**Step 10 — Randomization**
-Stratified randomization within spend tier × recency band strata (4×4 = 16 cells), ensuring balance on the strongest predictors of the outcome.
-
-**Step 11 — Duration & Stopping Rules**
-4-week fixed horizon. No interim analysis. No early stopping. Coupon validity = experiment window.
-
-**Step 12 — Pre-Launch Quality Checks**
-SRM test, baseline balance (Welch's t + χ² for categorical), A/A simulation, duplicate check.
-
-**Step 13 — Analysis Plan (Pre-Registered)**
-Welch's t-test on 4-week total spend (ITT). Optional CUPED adjustment. Winsorization at 1st/99th percentile. Zero-spend households included. Bonferroni correction for secondary metrics.
-
-**Step 14 — Decision Rule**
-Three-gate decision: statistical significance + practical significance (effect ≥ MDE + CI lower > 0) + guardrails.
-
-### Statistical Methods
-- **Welch's t-test:** Handles unequal variance between groups; robust for skewed distributions at n > 100
-- **CUPED:** Reduces variance using correlated pre-period covariate; equivalent to OLS with pre-period covariate
-- **Stratified randomization:** Ensures balance on spend tier and recency — the two strongest confounders
-- **ITT framework:** All eligible households included regardless of actual coupon redemption; prevents selection bias
-- **Winsorization:** Clips outliers at 1st/99th percentile; reduces influence of extreme spenders on variance
+| Sample ratio mismatch | PASS (p > 0.01) |
+| Baseline covariate balance | PASS (no significant imbalances) |
+| A/A simulation FPR | PASS (~5%, matches α) |
+| Duplicate households | PASS (0 duplicates) |
 
 ---
 
 ## How to Run
 
-### Prerequisites
-```bash
-# Clone the repository
-git clone https://github.com/<your-username>/ab-testing-experiment-design-complete-journey.git
-cd ab-testing-experiment-design-complete-journey
+### 1. Install dependencies
 
-# Install dependencies
+```bash
 pip install -r requirements.txt
 ```
 
-### Data Setup
-Download the dunnhumby "The Complete Journey" dataset and place all CSV files in `data/raw/`:
-- [Download from Kaggle](https://www.kaggle.com/datasets/frtgnn/dunnhumby-the-complete-journey)
-- Or from [dunnhumby Source Files](https://www.dunnhumby.com/source-files/)
+### 2. Download data
 
-### Run Notebooks (in order)
+Download the dunnhumby "The Complete Journey" dataset and place all CSV files in `data/raw/`:
+- [Kaggle](https://www.kaggle.com/datasets/frtgnn/dunnhumby-the-complete-journey)
+- [dunnhumby Source Files](https://www.dunnhumby.com/source-files/)
+
+### 3. Run notebooks in order
+
 ```bash
 jupyter notebook
 ```
 
-| Notebook | Description |
-|---|---|
-| `notebooks/01_data_preparation_and_eda.ipynb` | Data loading, feature engineering, EDA |
-| `notebooks/02_experiment_design.ipynb` | Full 14-step experiment design |
-| `notebooks/03_appendix.ipynb` | Supporting analyses (sample size tables, A/A simulation, subgroup preview, binary power) |
+Run `01` → `02` → `03`. Notebook 1 outputs `hh_features.csv`, which is required by Notebooks 2 and 3.
 
-### Using the `src/` Modules
+### 4. Using `src/` modules directly
+
 ```python
-from src.eligibility import filter_eligible_households
 from src.power import sample_size_two_sample_ttest
 from src.cuped import apply_cuped
 from src.randomization import stratified_randomize
 
-# Example: compute required sample size
-n = sample_size_two_sample_ttest(sigma=85.0, delta=14.0, alpha=0.05, power=0.80)
-print(f"Required n per arm: {n}")
+# Required sample size per arm
+n = sample_size_two_sample_ttest(sigma=138.01, delta=14.0, alpha=0.05, power=0.80)
+print(f"n per arm (CUPED): {n}")  # ~1,526
+
+# Apply CUPED adjustment
+cuped_outcomes = apply_cuped(y_post, x_pre)
+
+# Stratified randomization
+assignments = stratified_randomize(df, strata_cols=['spend_tier', 'recency_band'], seed=42)
 ```
+
+---
+
+## Statistical Methods
+
+| Method | Purpose |
+|---|---|
+| **Welch's t-test** | Primary hypothesis test; handles unequal variance; robust at n > 100 by CLT |
+| **CUPED** | Variance reduction using correlated pre-period covariate; reduces σ by ~27%, sample size by ~46% |
+| **Stratified randomization** | Ensures balance on spend tier and recency — the two strongest confounders |
+| **ITT framework** | All eligible households included regardless of coupon redemption; prevents selection bias |
+| **Winsorization** | Clips 1st/99th percentile outliers; reduces influence of extreme spenders on variance |
 
 ---
 
@@ -278,15 +210,14 @@ print(f"Required n per arm: {n}")
 | statsmodels | ≥ 0.14 |
 | matplotlib | ≥ 3.7 |
 | seaborn | ≥ 0.12 |
-
-Install all: `pip install -r requirements.txt`
+| jupyter | ≥ 1.0 |
 
 ---
 
 ## License
 
-This project uses the dunnhumby "The Complete Journey" dataset for educational and research purposes. The dataset is provided by dunnhumby under their terms of use.
+This project uses the dunnhumby "The Complete Journey" dataset for educational and research purposes under dunnhumby's terms of use.
 
 ---
 
-*Project developed as a portfolio exercise in A/B test experiment design and causal inference methodology.*
+*Portfolio project demonstrating A/B test experiment design and causal inference methodology.*

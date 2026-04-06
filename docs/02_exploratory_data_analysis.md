@@ -1,115 +1,186 @@
 # Exploratory Data Analysis
 
-**Notebook:** `notebooks/01_data_preparation_and_eda.ipynb` (Section 4–5)
+**Notebook:** `notebooks/01_data_preparation_and_eda.ipynb` (Steps 4–6)
 
 ---
 
 ## Overview
 
-Exploratory Data Analysis (EDA) characterizes the household population to:
-1. Understand the spend distribution and identify variance challenges for power analysis
-2. Examine engagement patterns (trips, recency) to inform eligibility criteria
-3. Analyze promotion responsiveness to motivate the coupon experiment
-4. Explore demographic distributions in the available subset
-5. Identify weekly spend trends and seasonality
-6. Define spend tiers and recency bands for stratified randomization
+The EDA section explores household-level behavioral patterns derived from 71 weeks of pre-period transactions. The goals are to (1) understand the distribution and structure of the data before designing the experiment, (2) identify key predictors of spend and engagement, and (3) validate the stratification variables used in randomization.
 
 ---
 
-## 4a. Spend Distribution
+## Spend Distribution
 
-**Key findings:**
-- Spend distribution is **right-skewed** — most households spend modestly, but a small fraction of high-spend outliers inflates variance
-- Skewness ≈ 1.4 (post-period 4-week windows)
-- **Implication:** Raw variance will overestimate the noise in a well-run experiment; winsorization (1st–99th percentile) is recommended before power analysis
+### Total Pre-Period Spend
 
-**Distribution characteristics:**
-| Statistic | Pre-period avg weekly spend |
-|---|---|
-| Median | ~$17–20/week |
-| Mean | Higher (pulled right by outliers) |
-| Distribution shape | Right-skewed, heavy upper tail |
+Pre-period total spend (`total_spend`) is heavily right-skewed, driven by a small fraction of high-frequency, high-basket households:
 
-**Action taken:**
-- Both raw and winsorized σ are computed for power scenarios
-- CUPED further reduces effective variance by exploiting pre-post correlation
+- **Median** is substantially lower than the mean
+- The distribution has a long upper tail with no natural ceiling
+- Log-transformation reveals an approximately log-normal shape
 
----
+### Average Weekly Spend
 
-## 4b. Trip Frequency & Recency
+`avg_weekly_spend` is the primary stratification variable and the covariate used in CUPED variance reduction:
 
-**Key findings:**
-- Most households shop 1–3 times per week on average
-- Recency distribution is concentrated in the 0–30 day range, with a tail of lapsed/churned households
-- **Implication for eligibility:** Households with recency > 90 days are likely churned and unlikely to respond to a coupon campaign; they are excluded from the eligible population
+- Right-skewed distribution with skewness ≈ 1.4
+- Household spending ranges from near-zero to several hundred dollars per week
+- Spend tier quartiles reflect meaningful behavioral segments (see table below)
 
----
-
-## 4c. Promotion Responsiveness
-
-**Key findings:**
-- Overall coupon usage rate is relatively low across the full population (~17–20% redemption rate on received campaigns)
-- Loyalty card discount rate is higher, indicating that most households do use loyalty pricing
-- **Implication:** Coupon response will be concentrated among price-sensitive segments; this experiment tests whether targeted coupons increase overall spend, not just channel-specific discounts
-
----
-
-## 4d. Demographic Breakdown
-
-Only ~800 of 2,498 households have demographic data. Among those:
-- Age distribution spans 25–65+, with concentration in 35–54
-- Income range: broad distribution from under $25K to over $125K
-- Household size: mix of 1-person to 5+ person households
-
-**Note:** Demographic data is not required for eligibility and will not be used in the primary analysis. It is available for subgroup analysis only (Appendix D).
-
----
-
-## 4e. Weekly Spend Trends
-
-**Key findings:**
-- Weekly aggregate spend is relatively stable over 102 weeks with no strong upward or downward trend
-- Minor seasonality is visible (holiday period spikes) but does not undermine a 4-week experiment window
-- No structural break between pre-period (weeks 1–71) and post-period (weeks 72–102), supporting the use of post-period data as a variance estimation proxy
-
----
-
-## 4f. Spend Segmentation for Stratification
-
-Spend tiers are defined using quartiles of `avg_weekly_spend`:
-
-| Tier | Weekly Spend Range | Share |
+| Tier | Households (Eligible) | Mean Avg Weekly Spend |
 |---|---|---|
-| Low | Bottom 25% | 25% |
-| Medium-Low | 25th–50th pct | 25% |
-| Medium-High | 50th–75th pct | 25% |
-| High | Top 25% | 25% |
+| Low | 23 | ~$7 |
+| Medium-Low | 234 | ~$17 |
+| Medium-High | 458 | ~$33 |
+| High | 573 | ~$83 |
 
-Recency bands are defined using days since last purchase:
+### Spend per Trip
 
-| Band | Days Since Last Purchase |
-|---|---|
-| 0–7d | Active (shopped within last week) |
-| 8–30d | Recent |
-| 31–90d | Lapsing |
-| 90d+ | Churned (excluded from eligibility) |
+`avg_basket_size` (spend per trip) varies considerably across households and is correlated with but distinct from weekly spend:
 
-These two variables define the **16-cell stratification grid** used in randomization (Step 10 of the experiment design).
+- Some households shop frequently with small baskets; others shop infrequently with large baskets
+- This distinction is captured in the `spend_tier` vs. `total_trips` axes
 
 ---
 
-## 5. Post-Period Outcome Variables
+## Trip Frequency and Recency
 
-Post-period outcomes (weeks 72–102) are computed per household as validation:
-- They confirm that spending patterns in the post-period are consistent with the pre-period
-- They provide the empirical σ estimates used in power analysis (Steps 5b–5c)
-- The pre-post correlation (r ≈ 0.81) justifies CUPED as a powerful variance reduction technique
+### Total Trips
 
-**Summary Statistics:**
+`total_trips` in the pre-period ranges from just a few visits to hundreds across 71 weeks. The distribution is right-skewed but less extreme than spend.
 
-| Metric | Value |
+`avg_trips_per_week` shows that most active households visit roughly 1–3 times per week.
+
+### Recency
+
+`recency_days` measures how recently a household transacted before the end of week 71:
+
+| Band | Days Since Last Purchase | Eligible Households |
+|---|---|---|
+| 0–7d (Active) | 0–7 | 942 |
+| 8–30d (Recent) | 8–30 | 287 |
+| 31–90d (Lapsing) | 31–90 | 59 |
+| 90d+ (Churned) | > 90 | Excluded |
+
+The vast majority of eligible households (73%) are in the 0–7d band, indicating high recent engagement. Lapsing households (31–90d) represent a small fraction with meaningfully lower spend levels.
+
+---
+
+## Promotion Responsiveness
+
+### Coupon Usage Rate
+
+`coupon_usage_rate` — the fraction of trips involving a coupon redemption — is very low on average:
+
+- Most households have a coupon usage rate near zero
+- A small segment of "coupon enthusiasts" shows consistently high usage
+- The distribution is zero-inflated with a long right tail
+
+This low baseline usage is relevant for experiment design: the treatment (coupon delivery) will introduce a new redemption opportunity, and the ITT framework captures the average effect across all eligible households regardless of redemption.
+
+### Loyalty Card Usage
+
+`loyalty_usage_rate` is substantially higher than coupon usage — most transactions involve a loyalty discount. This reflects the retailer's broad loyalty program penetration.
+
+### Discount per Trip
+
+`discount_per_trip` captures the average dollar amount saved per visit. Higher-spending households tend to receive larger absolute discounts in part because they purchase more items.
+
+---
+
+## Demographic Breakdown
+
+Demographics are available for approximately 800 of 2,498 households. Among households with demographic information:
+
+- **Age groups** span a wide range; middle-aged adults are most represented
+- **Income levels** cover a broad spectrum, with the modal range in the middle tiers
+- **Household size** ranges from single-person to large family units
+- **Children:** Households with children tend to have higher spending and more frequent trips
+- **Homeowners** slightly outnumber renters in the demographic-matched subset
+
+Demographic fields are used only in exploratory subgroup analyses (Appendix D) and do not affect the primary eligibility criteria or randomization.
+
+---
+
+## Weekly Spend Trends
+
+Plotting mean weekly spend across all 102 weeks reveals:
+
+- **Stable baseline spending** throughout weeks 1–71 with no strong trend
+- **Seasonal patterns** consistent with typical grocery retail (slight increases around holidays)
+- **Continuity across the pre/post boundary** — the week-71 cutoff does not coincide with any visible structural break
+
+The stability of spend across the pre/post boundary supports using the pre-period as a reliable baseline for CUPED adjustment and variance estimation.
+
+---
+
+## Pre-Period vs. Post-Period Consistency
+
+A scatter plot of pre-period average weekly spend (scaled to 4 weeks) versus post-period 4-week total spend for the eligible population shows:
+
+- Strong linear relationship with positive slope
+- Pre-to-post Pearson correlation: **ρ = 0.682**
+- This correlation is the foundation for CUPED variance reduction — higher ρ means greater potential sample size savings
+
+The strong pre-post consistency confirms that pre-period spending is a reliable covariate for the CUPED adjustment in the analysis plan.
+
+---
+
+## Spend Tier × Recency Band Cross-Tabulation
+
+Analyzing spend behavior across the 16 stratification cells (4 spend tiers × 4 recency bands) reveals meaningful heterogeneity:
+
+| Spend Tier | Pre-Period 4-wk Spend (Mean ± SD) |
 |---|---|
-| Total households | 2,498 |
-| Post-period conversion rate | ~92% (households with ≥1 post-period purchase) |
-| Pre-post spend correlation | r ≈ 0.81 |
-| Zero-spend rate in 4-week windows | ~8% |
+| High | $332.90 ± $145.57 |
+| Medium-High | $133.38 ± $27.28 |
+| Medium-Low | $67.64 ± $15.29 |
+| Low | $28.90 ± $5.78 |
+
+- Higher spend tiers show higher variance in absolute terms — this motivates stratified randomization
+- The High tier (n=573) dominates the eligible pool numerically
+- The Low tier (n=23) is very small; within-cell balance is ensured by stratified assignment
+
+Recency bands show expected patterns: Active households (0–7d) have higher mean spend and more consistent shopping behavior than Lapsing households.
+
+---
+
+## Distribution Diagnostics
+
+### Zero-Spend Rate
+
+In 4-week rolling windows on post-period data (used as a proxy for the experiment outcome):
+
+- **Zero-spend rate ≈ 8%** — low but non-negligible
+- This confirms that zero-spend households must be included in the ITT analysis (Y = 0 for non-purchasers)
+- The low sparsity supports using a standard continuous-outcome t-test rather than a two-part model
+
+### Heavy Tails (Skewness Check)
+
+- 4-week total spend has skewness ≈ 1.2–1.4 in post-period rolling windows
+- Q-Q plot shows deviation from normality in the upper tail
+- With n > 600 per arm, the Central Limit Theorem supports asymptotic validity of the Welch's t-test
+- Winsorization at the 1st and 99th percentiles is pre-registered as a robustness check
+
+### A/A Simulation Preview
+
+To verify that the 4-week metric is well-behaved under the null hypothesis, 1,000 random 50/50 splits of the post-period population are analyzed:
+
+- False positive rate ≈ 5% — confirms correct type I error rate
+- p-value distribution is approximately uniform on [0, 1]
+- The 95th percentile of observed absolute mean differences is approximately $6–8 — well below the $14 MDE, confirming that random noise will not produce false apparent effects of the target magnitude
+
+---
+
+## Key EDA Takeaways
+
+| Finding | Implication for Experiment Design |
+|---|---|
+| Right-skewed spend with heavy upper tail | Use Welch's t-test; pre-register winsorization |
+| ρ = 0.682 pre-post correlation | CUPED reduces required sample size by ~46% |
+| Zero-spend rate ≈ 8% | Include zeros in ITT analysis; no exclusion of non-purchasers |
+| Spend tier explains most variance | Use spend tier as primary stratification variable |
+| Recency captures engagement level | Include recency band as secondary stratification dimension |
+| Demographic data incomplete (~32% coverage) | Demographics used for exploratory subgroups only |
+| Spending stable across pre/post boundary | Pre-period is a reliable baseline covariate |
